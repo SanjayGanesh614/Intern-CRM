@@ -9,11 +9,10 @@ def fetch_jobs():
 
     url = "https://jsearch.p.rapidapi.com/search"
     
-    # IMPORTANT: Put your actual RapidAPI key here
-    headers = {
-        "x-rapidapi-key": "721a1d5159mshe567e9dd3e9a48ep1f5af1jsn133a0d5ed151",
-        "x-rapidapi-host": "jsearch.p.rapidapi.com"
-    }
+    api_key = os.environ.get("RAPIDAPI_KEY")
+    if not api_key:
+        return {"status": "error", "message": "RAPIDAPI_KEY not set"}
+    headers = {"x-rapidapi-key": api_key, "x-rapidapi-host": "jsearch.p.rapidapi.com"}
 
     # You can change this query later if you want
     querystring = {"query": "internship in india", "page": "1", "num_pages": "1"}

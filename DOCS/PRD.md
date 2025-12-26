@@ -567,110 +567,177 @@ Follow-up completion rate > 90%
 
 8. Technology Stack (MANDATORY)
 
-The CRM Dashboard must be built using the following technologies:
+The CRM Dashboard must be built using the following technologies.
+This stack is final and must be adhered to strictly by all builders and AI agents.
 
 8.1 Frontend
-Framework: React (Latest Version)
+Framework: React (Latest Stable Version)
 
-The UI must be developed using React, chosen for:
+The user interface must be developed using React, chosen for:
 
-Component-based UI structure
+Component-based architecture suitable for complex dashboards
 
-Strong compatibility with Firebase
+Excellent support for large data tables, modals, drawers, and side panels
 
-Easy integration of tables, modals, drawers, dashboards
+Strong ecosystem for admin/CRM-style applications
 
-High performance for real-time Firestore-powered interfaces
+Predictable state management for multi-user workflows
 
-Native compatibility with Firebase Studio’s AI code generation capabilities
+Easy integration with REST APIs and real-time updates (polling or WebSockets)
 
-Additional frontend dependencies:
+Frontend Dependencies (Mandatory / Allowed)
 
-React Router (navigation)
+React Router — client-side navigation
 
-TailwindCSS or Material UI (UI styling — builder may choose)
+TailwindCSS or Material UI — UI styling (builder may choose one)
 
-Zustand / Redux (state management)
+Zustand or Redux Toolkit — global state management
 
-react-table or MUI DataGrid (for internship table)
+react-table or MUI DataGrid — high-performance internship/company tables
+
+Axios / Fetch API — backend communication
+
+The frontend must be fully decoupled from backend implementation details.
 
 8.2 Backend
+Backend Framework
 
-Backend must be implemented entirely using Firebase services:
+The backend must be implemented using one of the following:
 
-1. Firebase Firestore (Database)
+Node.js (Express or Fastify)
+OR
 
-Stores internship data
+Python (FastAPI)
 
-Stores company data
+The choice must prioritize:
 
-Stores activity logs
+Clean REST API design
 
-Stores assignments, remarks, follow-ups
+Async support for long-running tasks
 
-Stores AI outreach messages
+Easy integration with Python-based fetch scripts
 
-Uses Firestore indexes for efficient filtering & pagination
+Database: MongoDB (Primary Data Store)
 
-2. Firebase Cloud Functions (Server-side logic)
+MongoDB is the single source of truth for all application data.
 
-Implements all API endpoints outlined in API_SPEC.md, including:
+MongoDB must store:
 
-Internship fetch execution
+Internship data
 
-Status updates
+Company data
+
+User accounts and roles
+
+Sales pipeline status
 
 Assignments
 
-AI outreach generator invocation
+Remarks and activity logs
 
-Follow-up handling
+Follow-ups and reminders
 
-Notifications
+AI-generated outreach messages
 
-Scheduled tasks
+Fetch execution logs and progress tracking
 
-Cloud Functions serve as the backend API layer.
+MongoDB Requirements
 
-3. Firebase Authentication
+Schemas must strictly follow Data.md
+
+Proper indexes must be created for:
+
+status
+
+assigned_to
+
+company_id
+
+follow_up_date
+
+fetched_at
+
+Use upserts for company enrichment
+
+Avoid unbounded collection scans
+
+8.2.1 Python Fetch Script Integration (Mandatory)
+
+The existing Python internship fetch script must be integrated into the backend as a server-side job, never executed from the frontend.
+
+Accepted integration approaches:
+
+Backend triggers Python via subprocess
+
+Background worker / job queue (preferred for scale)
+
+Responsibilities of the Python script integration:
+
+Fetch internships from external sources
+
+Deduplicate records
+
+Insert internships into MongoDB
+
+Extract and upsert companies into the companies collection
+
+Track fetch progress (%)
+
+Write fetch metadata to a fetch_log collection
+
+Support cancellation and retry
+
+8.3 Authentication & Authorization
+
+Authentication must be implemented using one of the following:
+
+Custom JWT-based authentication
+
+OR a managed auth provider (e.g., Auth0, Clerk, Cognito)
+
+Authorization requirements:
+
+Role-based access control:
+
+Admin
+
+Sales
+
+Viewer
+
+API-level enforcement of permissions
+
+No direct database access from the frontend
+
+8.4 Real-Time & Near–Real-Time Updates
+
+The system must support near real-time UI updates using one or more of the following:
+
+WebSockets
+
+Server-Sent Events (SSE)
+
+Polling with optimized intervals
 
 Used for:
 
-Admin/user login
+Fetch progress updates
 
-Role-based access control
+Status changes
 
-Restricting database reads & writes according to user roles
+Assignment updates
 
-4. Firebase Cloud Scheduler
+Notifications
 
-Used to automate:
+Follow-up reminders
 
-Scheduled internship fetches
+Real-time behavior must be handled at the API layer, not in the database.
 
-Daily follow-up reminders
+8.5 AI Integration Layer
 
-Notification triggers
+AI features must operate through backend APIs, never directly from the frontend.
 
-5. Firebase Hosting
-
-React app deployed on Firebase Hosting (CDN-backed, HTTPS).
-
-8.3 Real-Time Architecture
-
-The system must leverage React + Firestore’s native real-time capabilities:
-
-Internship table updates in real-time as statuses change
-
-Progress screen updates dynamically during fetch
-
-Notifications appear immediately
-
-Assignments and follow-ups sync instantly
-
-8.4 AI Integration Layer
-
-AI features must operate through Cloud Functions:
+Required AI endpoints (as defined in api.md):
 
 /ai/outreach/generate
 
@@ -678,24 +745,32 @@ AI features must operate through Cloud Functions:
 
 /ai/followup/suggest
 
-Every AI message must save to Firestore.
+AI integration rules:
 
-8.5 Why React + Firebase (Rationale)
+AI may only use data already present in MongoDB
 
-This stack is mandatory for:
+All AI-generated outputs must be persisted
 
-Best compatibility with Firebase Studio AI Code Editor
+Every AI action must be logged with timestamps and user context
 
-Simplified infrastructure (no backend server to manage)
+8.6 Why React + Custom Backend + MongoDB (Rationale)
 
-Real-time CRM features
+This stack is mandatory because it provides:
 
-Scalability for high-volume data (tens of thousands of internships)
+Full control over backend logic and long-running jobs
 
-Strong developer ecosystem
+Native support for Python-based data ingestion pipelines
 
-Fast feature iteration
+Better scalability for high-volume internship data
 
-This is the official stack for implementation.
+Clear separation of concerns (UI, API, data layer)
+
+Easier future migration to microservices if needed
+
+Independence from vendor lock-in (Firebase)
+
+Strong compatibility with modern AI-assisted code editors
+
+This is the official and final implementation stack for the project.
 
 ✔️ THE PRD IS COMPLETE.
