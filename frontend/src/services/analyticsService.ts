@@ -5,6 +5,9 @@ export interface DashboardStats {
     total_companies: number;
     internships_by_status: Record<string, number>;
     followups_due_today: number;
+    conversions: number;
+    industry_performance: Array<{ _id: string, count: number }>;
+    leaderboard: Array<{ _id: string, count: number }>;
 }
 
 export interface TimelineData {

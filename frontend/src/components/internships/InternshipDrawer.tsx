@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { X, ExternalLink, Building2, MapPin, Calendar, Briefcase, Clock, MessageSquare, Globe } from 'lucide-react';
+import { X, ExternalLink, Building2, MapPin, Calendar, Briefcase, Globe } from 'lucide-react';
 import type { Internship } from '../../services/internshipService';
 import { cn } from '../../utils';
 import AssignmentDropdown from './AssignmentDropdown';
 import { assignInternship, updateInternshipStatus } from '../../services/internshipService';
 import { toast } from 'react-hot-toast';
+import { ActivityTimeline } from './ActivityTimeline';
+import { FollowUpTab } from './FollowUpTab';
 
 interface InternshipDrawerProps {
     internship: Internship | null;
@@ -191,23 +193,11 @@ const InternshipDrawer: React.FC<InternshipDrawerProps> = ({ internship, onClose
                         )}
 
                         {activeTab === 'remarks' && (
-                            <div className="space-y-4">
-                                <div className="text-center py-8 text-gray-500 text-sm">
-                                    <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                                    <p>Activity timeline coming soon.</p>
-                                    {/* Requires ActivityLog fetch on Drawer open - skipped for concise MVP */}
-                                </div>
-                            </div>
+                            <ActivityTimeline internshipId={internship.internship_id} />
                         )}
 
                         {activeTab === 'followup' && (
-                            <div className="space-y-4">
-                                <div className="text-center py-8 text-gray-500 text-sm">
-                                    <Clock className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                                    <p>Follow-up scheduler coming soon.</p>
-                                    {/* Requires FollowUp integration - skipped for concise MVP */}
-                                </div>
-                            </div>
+                            <FollowUpTab internshipId={internship.internship_id} />
                         )}
 
                     </div>

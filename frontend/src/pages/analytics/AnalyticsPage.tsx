@@ -41,7 +41,7 @@ const AnalyticsPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Analytics Overview</h1>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600 dark:text-blue-400">
@@ -88,9 +88,21 @@ const AnalyticsPage: React.FC = () => {
                         </div>
                     </div>
                 </div>
+
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
+                            <TrendingUp className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Conversions</p>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats?.conversions}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            {/* Charts */}
+            {/* Charts Grid 1 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Status Distribution */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
@@ -119,6 +131,41 @@ const AnalyticsPage: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Industry Performance */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Top Industries</h3>
+                    <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={stats?.industry_performance || []} layout="vertical">
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis type="number" />
+                                <YAxis dataKey="_id" type="category" width={100} tick={{ fontSize: 12 }} />
+                                <Tooltip />
+                                <Bar dataKey="count" fill="#8884d8" name="Companies" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            </div>
+
+            {/* Charts Grid 2 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Team Leaderboard */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Team Leaderboard</h3>
+                    <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={stats?.leaderboard || []}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="_id" />
+                                <YAxis />
+                                <Tooltip />
+                                <Bar dataKey="count" fill="#82ca9d" name="Actions" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
                 {/* Application Timeline */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Application Activity (Last 30 Days)</h3>
@@ -129,7 +176,6 @@ const AnalyticsPage: React.FC = () => {
                                 <XAxis dataKey="_id" />
                                 <YAxis />
                                 <Tooltip />
-                                <Legend />
                                 <Bar dataKey="count" fill="#8884d8" name="Applications" />
                             </BarChart>
                         </ResponsiveContainer>

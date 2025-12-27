@@ -5,6 +5,7 @@ import DashboardHome from './pages/dashboard/DashboardHome';
 import InternshipsPage from './pages/internships/InternshipsPage';
 import UsersPage from './pages/admin/UsersPage';
 import AnalyticsPage from './pages/analytics/AnalyticsPage';
+import CompaniesPage from './pages/companies/CompaniesPage';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Toaster } from 'react-hot-toast';
 
@@ -18,6 +19,7 @@ function App() {
           <Route element={<DashboardLayout />}>
             <Route path="/" element={<DashboardHome />} />
             <Route path="/internships" element={<InternshipsPage />} />
+            <Route path="/companies" element={<CompaniesPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
 
             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>

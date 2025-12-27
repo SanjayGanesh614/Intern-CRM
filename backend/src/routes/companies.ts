@@ -11,7 +11,46 @@ companiesRouter.get('/', auth, async (req, res) => {
   if (industry) q.industry = industry
   if (size) q.size = size
   if (search) q.name = { $regex: String(search), $options: 'i' }
-  const companies = await Company.find(q).lean()
+
+  const companies = await Company.aggregate([
+    { $match: q },
+    {
+      $lookup: {
+        from: 'internships',
+        localField: 'company_id',
+        foreignField: 'company_id',
+        as: 'internships'
+      }
+    },
+    {
+      $addFields: {
+        status: {
+          $reduce: {
+            input: '$internships',
+            initialValue: 'Unassigned',
+            in: {
+              $cond: [
+                { $or: [{ $eq: ['$$this.status', 'Offer'] }, { $eq: ['$$this.status', 'Onboarded'] }] },
+                '$$this.status',
+                {
+                  $cond: [
+                    { $eq: ['$$this.status', 'Interview'] },
+                    'Interview',
+                    '$$value'
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        assigned_to: {
+          $setUnion: '$internships.assigned_to'
+        }
+      }
+    },
+    { $project: { internships: 0 } }
+  ])
+
   res.json(companies)
 })
 
