@@ -6,7 +6,7 @@ async function run() {
     if (!env.mongoUri)
         throw new Error('MONGODB_URI required');
     await connectMongo();
-    const email = 'admin@example.com';
+    const email = 'admin@example.com'.toLowerCase().trim();
     const name = 'Admin';
     const password = 'admin123';
     const existing = await User.findOne({ email });

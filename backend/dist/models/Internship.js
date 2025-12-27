@@ -32,9 +32,4 @@ const InternshipSchema = new Schema({
     last_contacted: { type: Date },
     follow_up_date: { type: Date, index: true }
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
-InternshipSchema.index({ status: 1 });
-InternshipSchema.index({ assigned_to: 1 });
-InternshipSchema.index({ follow_up_date: 1 });
-InternshipSchema.index({ company_id: 1 });
-InternshipSchema.index({ fetched_at: 1 });
 export const Internship = model('internships', InternshipSchema);
