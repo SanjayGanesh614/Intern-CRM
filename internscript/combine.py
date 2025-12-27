@@ -40,6 +40,7 @@ def extract_and_append_jobs():
                         "id": job_id,
                         "title": job.get("job_title"),
                         "company": job.get("employer_name"),
+                        "website": job.get("employer_website"),
                         "location": job.get("job_location"),
                         "city": job.get("job_city"),
                         "state": job.get("job_state"),

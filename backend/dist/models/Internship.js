@@ -10,6 +10,8 @@ const InternshipSchema = new Schema({
     end_date: { type: Date },
     source: { type: String },
     source_url: { type: String },
+    description: { type: String },
+    posted_at: { type: String },
     fetched_at: { type: Date, required: true, index: true },
     status: {
         type: String,

@@ -4,11 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "seed:admin": "ts-node-dev --transpile-only src/scripts/seedAdmin.ts"
+    "seed:admin": "tsx src/scripts/seedAdmin.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -32,6 +32,7 @@
     "@types/node": "^20.11.30",
     "@types/uuid": "^9.0.7",
     "ts-node-dev": "^2.0.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.6.3"
   }
 }

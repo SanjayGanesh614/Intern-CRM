@@ -90,20 +90,17 @@ export async function runFetchJob(opts) {
         const location = job.location || job.job_location || '';
         const itype = job.type || job.job_employment_type || '';
         const publisher = job.publisher || job.job_publisher || '';
+        const website = job.website || job.employer_website || '';
         if (!title || !companyName) {
             duplicates++;
             continue;
         }
         const existing = apply_link ? await Internship.findOne({ source_url: apply_link }) : null;
-        if (existing) {
-            duplicates++;
-            continue;
-        }
         let company = await Company.findOne({ name: companyName });
         if (!company) {
             company = await Company.create({
                 name: companyName,
-                website: '',
+                website: website,
                 industry: '',
                 size: '',
                 headquarters: '',
@@ -111,22 +108,43 @@ export async function runFetchJob(opts) {
                 enrichment_source: { publisher }
             });
         }
-        await Internship.create({
+        else if (website && !company.website) {
+            // Update website if we have it now but didn't before
+            await Company.updateOne({ _id: company._id }, { $set: { website } });
+        }
+        const internshipData = {
             company_id: company.company_id,
             title,
-            internship_type: itype || 'Others',
+            internship_type: itype || 'Internship',
             location,
-            start_date: undefined,
-            end_date: undefined,
-            source: 'JSearch',
+            description: job.description || '',
+            posted_at: job.posted_at || null,
+            source: publisher || 'JSearch',
             source_url: apply_link,
             fetched_at: new Date(),
-            status: 'Unassigned',
-            assigned_to: undefined,
-            last_contacted: undefined,
-            follow_up_date: undefined
-        });
-        inserted++;
+        };
+        if (existing) {
+            // Update existing entry with new details but preserve status/assignment
+            await Internship.updateOne({ _id: existing._id }, {
+                $set: {
+                    company_id: internshipData.company_id,
+                    title: internshipData.title,
+                    internship_type: internshipData.internship_type,
+                    location: internshipData.location,
+                    description: internshipData.description,
+                    posted_at: internshipData.posted_at,
+                    source: internshipData.source,
+                }
+            });
+            duplicates++;
+        }
+        else {
+            await Internship.create({
+                ...internshipData,
+                status: 'Unassigned'
+            });
+            inserted++;
+        }
         const pct = 65 + Math.floor((inserted / Math.max(1, total)) * 35);
         progressMap.set(fetch_id, { phase: 'db_upsert', percent: Math.min(99, pct), total_fetched: total, valid_entries: inserted, duplicates });
     }

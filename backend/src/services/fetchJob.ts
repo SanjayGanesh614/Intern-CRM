@@ -27,7 +27,7 @@ export async function cancelFetch(fetch_id: string) {
     try {
       ref.cancelled = true
       ref.proc.kill('SIGINT')
-    } catch {}
+    } catch { }
   }
   progressMap.set(fetch_id, { ...(progressMap.get(fetch_id) || { phase: 'idle', percent: 0, total_fetched: 0, valid_entries: 0, duplicates: 0 }), phase: 'cancelled', message: 'Cancelled by user' })
   await FetchLog.updateOne({ fetch_id }, { $set: { status: 'cancelled', completed_at: new Date() } })
@@ -62,8 +62,8 @@ export async function runFetchJob(opts: {
       stdio: ['ignore', 'pipe', 'pipe']
     })
     childMap.set(fetch_id, { proc })
-    proc.stdout.on('data', (_buf: Buffer) => {})
-    proc.stderr.on('data', (_buf: Buffer) => {})
+    proc.stdout.on('data', (_buf: Buffer) => { })
+    proc.stderr.on('data', (_buf: Buffer) => { })
     proc.on('exit', (_code: number) => {
       // proceed regardless; internship.fetch_jobs returns JSON via print
       resolve()
@@ -79,8 +79,8 @@ export async function runFetchJob(opts: {
       stdio: ['ignore', 'pipe', 'pipe']
     })
     childMap.set(fetch_id, { proc })
-    proc.stdout.on('data', (_buf: Buffer) => {})
-    proc.stderr.on('data', (_buf: Buffer) => {})
+    proc.stdout.on('data', (_buf: Buffer) => { })
+    proc.stderr.on('data', (_buf: Buffer) => { })
     proc.on('exit', (_code: number) => resolve())
   })
 
@@ -113,43 +113,63 @@ export async function runFetchJob(opts: {
     const location = job.location || job.job_location || ''
     const itype = job.type || job.job_employment_type || ''
     const publisher = job.publisher || job.job_publisher || ''
+    const website = job.website || job.employer_website || ''
+
     if (!title || !companyName) {
       duplicates++
       continue
     }
     const existing = apply_link ? await Internship.findOne({ source_url: apply_link }) : null
-    if (existing) {
-      duplicates++
-      continue
-    }
+
     let company = await Company.findOne({ name: companyName })
     if (!company) {
       company = await Company.create({
         name: companyName,
-        website: '',
+        website: website,
         industry: '',
         size: '',
         headquarters: '',
         linkedin_url: '',
         enrichment_source: { publisher }
       })
+    } else if (website && !company.website) {
+      // Update website if we have it now but didn't before
+      await Company.updateOne({ _id: company._id }, { $set: { website } })
     }
-    await Internship.create({
+
+    const internshipData = {
       company_id: company.company_id,
       title,
-      internship_type: itype || 'Others',
+      internship_type: itype || 'Internship',
       location,
-      start_date: undefined,
-      end_date: undefined,
-      source: 'JSearch',
+      description: job.description || '',
+      posted_at: job.posted_at || null,
+      source: publisher || 'JSearch',
       source_url: apply_link,
       fetched_at: new Date(),
-      status: 'Unassigned',
-      assigned_to: undefined,
-      last_contacted: undefined,
-      follow_up_date: undefined
-    } as any)
-    inserted++
+    }
+
+    if (existing) {
+      // Update existing entry with new details but preserve status/assignment
+      await Internship.updateOne({ _id: existing._id }, {
+        $set: {
+          company_id: internshipData.company_id,
+          title: internshipData.title,
+          internship_type: internshipData.internship_type,
+          location: internshipData.location,
+          description: internshipData.description,
+          posted_at: internshipData.posted_at,
+          source: internshipData.source,
+        }
+      })
+      duplicates++
+    } else {
+      await Internship.create({
+        ...internshipData,
+        status: 'Unassigned'
+      })
+      inserted++
+    }
     const pct = 65 + Math.floor((inserted / Math.max(1, total)) * 35)
     progressMap.set(fetch_id, { phase: 'db_upsert', percent: Math.min(99, pct), total_fetched: total, valid_entries: inserted, duplicates })
   }

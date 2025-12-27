@@ -13,26 +13,121 @@ import { updateStatus } from '../services/status.js'
 
 export const internshipsRouter = Router()
 
+// Bulk Assign
+internshipsRouter.post('/bulk/assign', auth, async (req, res) => {
+  const { ids, assigned_to } = req.body || {}
+  const actor = (req as any).user
+  if (!ids || !Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: 'invalid_ids' })
+
+  await Promise.all(ids.map(id => assignInternship({ internship_id: id, new_assignee: assigned_to || '', actor_user_id: actor.user_id })))
+
+  res.json({ ok: true, count: ids.length })
+})
+
+// Bulk Status Update
+internshipsRouter.post('/bulk/status', auth, async (req, res) => {
+  const { ids, new_status, remark } = req.body || {}
+  const actor = (req as any).user
+  if (!ids || !Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: 'invalid_ids' })
+  if (!new_status) return res.status(400).json({ error: 'invalid_status' })
+
+  // Process in parallel
+  // NOTE: For thousands of items, we might want to batch this or use a queue.
+  await Promise.all(ids.map(id => updateStatus({ internship_id: id, new_status, actor_user_id: actor.user_id, remark })))
+
+  res.json({ ok: true, count: ids.length })
+})
+
 internshipsRouter.get('/', auth, async (req, res) => {
   const { page, pageSize, skip } = parsePagination(req.query)
   const { sortSpec } = parseSort(req.query)
   const q: any = {}
   const { status, internship_type, location, source, assigned_user, search, start, end } = req.query
+
   if (status) q.status = status
   if (internship_type) q.internship_type = internship_type
   if (location) q.location = location
   if (source) q.source = source
   if (assigned_user) q.assigned_to = assigned_user
-  if (search) q.title = { $regex: String(search), $options: 'i' }
+
   if (start || end) {
     q.fetched_at = {}
     if (start) q.fetched_at.$gte = new Date(String(start))
     if (end) q.fetched_at.$lte = new Date(String(end))
   }
-  const [items, total] = await Promise.all([
-    Internship.find(q).sort(sortSpec).skip(skip).limit(pageSize).lean(),
-    Internship.countDocuments(q)
+
+  // Handle Search separately because we need to search on company name (after lookup) or title
+  // But for efficiency, we search title first if possible.
+  if (search) {
+    q.$or = [
+      { title: { $regex: String(search), $options: 'i' } }
+      // Company name search requires looking up first, handling below in pipeline match if needed
+      // For now, basic title search. Company name search can be added by adding a post-lookup match.
+    ]
+  }
+
+  const pipeline: any[] = [
+    { $match: q },
+    {
+      $lookup: {
+        from: 'companies',
+        localField: 'company_id',
+        foreignField: 'company_id',
+        as: 'company'
+      }
+    },
+    { $unwind: { path: '$company', preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'assigned_to',
+        foreignField: 'user_id',
+        as: 'assignee'
+      }
+    },
+    { $unwind: { path: '$assignee', preserveNullAndEmptyArrays: true } },
+    {
+      $project: {
+        internship_id: 1,
+        company_id: 1,
+        title: 1,
+        internship_type: 1,
+        location: 1,
+        start_date: 1,
+        end_date: 1,
+        source: 1,
+        source_url: 1,
+        fetched_at: 1,
+        status: 1,
+        assigned_to: 1,
+        last_contacted: 1,
+        follow_up_date: 1,
+        company_name: '$company.name',
+        company_industry: '$company.industry',
+        company_website: '$company.website',
+        assignee_name: '$assignee.name'
+      }
+    }
+  ]
+
+  // Apply Sort
+  if (Object.keys(sortSpec).length > 0) {
+    pipeline.push({ $sort: sortSpec })
+  }
+
+  const [items, totalCount] = await Promise.all([
+    Internship.aggregate([
+      ...pipeline,
+      { $skip: skip },
+      { $limit: pageSize }
+    ]),
+    Internship.aggregate([
+      ...pipeline,
+      { $count: 'total' }
+    ])
   ])
+
+  const total = totalCount.length > 0 ? totalCount[0].total : 0
   res.json({ items, page, pageSize, total })
 })
 

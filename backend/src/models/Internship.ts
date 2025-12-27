@@ -12,6 +12,8 @@ const InternshipSchema = new Schema(
     end_date: { type: Date },
     source: { type: String },
     source_url: { type: String },
+    description: { type: String },
+    posted_at: { type: String },
     fetched_at: { type: Date, required: true, index: true },
     status: {
       type: String,
@@ -35,10 +37,6 @@ const InternshipSchema = new Schema(
   { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } }
 )
 
-InternshipSchema.index({ status: 1 })
-InternshipSchema.index({ assigned_to: 1 })
-InternshipSchema.index({ follow_up_date: 1 })
-InternshipSchema.index({ company_id: 1 })
-InternshipSchema.index({ fetched_at: 1 })
+
 
 export const Internship = model('internships', InternshipSchema)

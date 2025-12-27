@@ -1,8 +1,10 @@
-import React from 'react';
-import { X, ExternalLink, Trash2, Building2, MapPin, Calendar, Briefcase, DollarSign } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, ExternalLink, Building2, MapPin, Calendar, Briefcase, Clock, MessageSquare, Globe } from 'lucide-react';
 import type { Internship } from '../../services/internshipService';
 import { cn } from '../../utils';
-
+import AssignmentDropdown from './AssignmentDropdown';
+import { assignInternship, updateInternshipStatus } from '../../services/internshipService';
+import { toast } from 'react-hot-toast';
 
 interface InternshipDrawerProps {
     internship: Internship | null;
@@ -11,8 +13,29 @@ interface InternshipDrawerProps {
 }
 
 const InternshipDrawer: React.FC<InternshipDrawerProps> = ({ internship, onClose, isOpen }) => {
-    // Handling escape key to close could be added here
+    const [activeTab, setActiveTab] = useState<'details' | 'remarks' | 'followup'>('details');
+    // const [isUpdating, setIsUpdating] = useState(false); // Unused
+
     if (!internship) return null;
+
+    const handleAssign = async (userId: string) => {
+        try {
+            await assignInternship(internship.internship_id, userId);
+            toast.success('Assignee updated');
+            // Optimistic update could go here, or simple global refresh triggered by parent
+        } catch (err) {
+            toast.error('Failed to assign user');
+        }
+    };
+
+    const handleStatusChange = async (status: string) => {
+        try {
+            await updateInternshipStatus(internship.internship_id, status);
+            toast.success('Status updated');
+        } catch (err) {
+            toast.error('Failed to update status');
+        }
+    };
 
     return (
         <>
@@ -28,121 +51,169 @@ const InternshipDrawer: React.FC<InternshipDrawerProps> = ({ internship, onClose
             {/* Drawer Panel */}
             <div
                 className={cn(
-                    "fixed inset-y-0 right-0 z-50 w-full max-w-xl bg-white dark:bg-gray-800 shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-gray-200 dark:border-gray-700",
+                    "fixed inset-y-0 right-0 z-50 w-full max-w-2xl bg-white dark:bg-gray-800 shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-gray-200 dark:border-gray-700",
                     isOpen ? "translate-x-0" : "translate-x-full"
                 )}
             >
                 <div className="h-full flex flex-col">
                     {/* Header */}
-                    <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/50">
-                        <div className="flex-1 min-w-0 pr-4">
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white truncate">
-                                {internship.title}
-                            </h2>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate flex items-center gap-2">
-                                <Building2 className="w-3 h-3" />
-                                {internship.company_id} {/* TODO: Map to name */}
-                            </p>
+                    <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+                        <div className="flex items-start justify-between mb-4">
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">
+                                    {internship.title}
+                                </h2>
+                                <div className="flex items-center gap-2 mt-1 text-gray-500 dark:text-gray-400">
+                                    <Building2 className="w-4 h-4" />
+                                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                                        {internship.company_name || 'Unknown Company'}
+                                        {!internship.company_name && <span className="text-xs ml-1 font-mono">({internship.company_id.slice(0, 6)})</span>}
+                                    </span>
+                                </div>
+                            </div>
+                            <button
+                                onClick={onClose}
+                                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
                         </div>
+
+                        <div className="flex items-center gap-4">
+                            <div className="flex-1">
+                                <label className="text-xs font-semibold text-gray-500 mb-1 block">Sales Status</label>
+                                <select
+                                    value={internship.status}
+                                    onChange={(e) => handleStatusChange(e.target.value)}
+                                    className={cn(
+                                        "block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white",
+                                        "font-medium"
+                                    )}
+                                >
+                                    <option value="Unassigned">Unassigned</option>
+                                    <option value="Contacted">Contacted</option>
+                                    <option value="Interview">Interview</option>
+                                    <option value="Offer">Offer</option>
+                                    <option value="Rejected">Rejected</option>
+                                    <option value="Onboarded">Onboarded</option>
+                                </select>
+                            </div>
+                            <div className="flex-1">
+                                <label className="text-xs font-semibold text-gray-500 mb-1 block">Assigned To</label>
+                                <AssignmentDropdown
+                                    value={internship.assigned_to}
+                                    onChange={handleAssign}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Tabs */}
+                    <div className="flex border-b border-gray-200 dark:border-gray-700 px-6">
                         <button
-                            onClick={onClose}
-                            className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors"
+                            onClick={() => setActiveTab('details')}
+                            className={cn("py-3 px-4 text-sm font-medium border-b-2 transition-colors", activeTab === 'details' ? "border-purple-600 text-purple-600" : "border-transparent text-gray-500 hover:text-gray-700")}
                         >
-                            <X className="w-5 h-5" />
+                            Details
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('remarks')}
+                            className={cn("py-3 px-4 text-sm font-medium border-b-2 transition-colors", activeTab === 'remarks' ? "border-purple-600 text-purple-600" : "border-transparent text-gray-500 hover:text-gray-700")}
+                        >
+                            Remarks & Activity
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('followup')}
+                            className={cn("py-3 px-4 text-sm font-medium border-b-2 transition-colors", activeTab === 'followup' ? "border-purple-600 text-purple-600" : "border-transparent text-gray-500 hover:text-gray-700")}
+                        >
+                            Follow-Up
                         </button>
                     </div>
 
                     {/* Scrollable Content */}
-                    <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                    <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-white dark:bg-gray-800">
 
-                        {/* Status Section */}
-                        <div className="flex flex-wrap gap-4 items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/30 rounded-lg border border-gray-100 dark:border-gray-700">
-                            <div>
-                                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Current Status
-                                </label>
-                                <div className="mt-1 flex items-center gap-2">
-                                    <span className={cn(
-                                        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-                                        internship.status === 'Applied' ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" :
-                                            internship.status === 'Offer' ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" :
-                                                internship.status === 'Rejected' ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" :
-                                                    "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
-                                    )}>
-                                        {internship.status}
-                                    </span>
+                        {activeTab === 'details' && (
+                            <div className="space-y-6">
+                                {/* Details Grid */}
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                            <MapPin className="w-4 h-4" /> Location
+                                        </div>
+                                        <p className="text-sm font-medium text-gray-900 dark:text-white">{internship.location || 'Remote'}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                            <Briefcase className="w-4 h-4" /> Type
+                                        </div>
+                                        <p className="text-sm font-medium text-gray-900 dark:text-white">{internship.internship_type}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                            <Calendar className="w-4 h-4" /> Posted
+                                        </div>
+                                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                            {internship.posted_at || new Date(internship.fetched_at).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                            <Globe className="w-4 h-4" /> Source
+                                        </div>
+                                        <a href={internship.source_url} target="_blank" rel="noreferrer" className="text-sm font-medium text-blue-600 hover:underline flex items-center gap-1">
+                                            {internship.source} <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="text-right">
-                                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Follow-up
-                                </label>
-                                <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">
-                                    {internship.follow_up_date ? new Date(internship.follow_up_date).toLocaleDateString() : 'Not set'}
-                                </p>
-                            </div>
-                        </div>
 
-                        {/* Details Grid */}
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                    <MapPin className="w-4 h-4" />
-                                    Location
+                                <div className="border-t border-gray-100 dark:border-gray-700 pt-6">
+                                    <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-2">Description</h3>
+                                    <div className="prose prose-sm dark:prose-invert text-gray-600 dark:text-gray-300 max-w-none whitespace-pre-wrap text-xs">
+                                        {internship.description || 'No description available.'}
+                                    </div>
                                 </div>
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {internship.location || 'Remote'}
-                                </p>
-                            </div>
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                    <Briefcase className="w-4 h-4" />
-                                    Type
-                                </div>
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {internship.internship_type || 'Internship'}
-                                </p>
-                            </div>
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                    <Calendar className="w-4 h-4" />
-                                    Posted Date
-                                </div>
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {internship.fetched_at ? new Date(internship.fetched_at).toLocaleDateString() : 'Unknown'}
-                                </p>
-                            </div>
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                    <DollarSign className="w-4 h-4" />
-                                    Salary
-                                </div>
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                    - {/* Payload doesn't implement salary yet */}
-                                </p>
-                            </div>
-                        </div>
 
-                        {/* Description */}
-                        <div>
-                            <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-2">
-                                Description
-                            </h3>
-                            <div className="prose prose-sm dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">
-                                <p>To be implemented: Full description from fetch payload.</p>
-                                {/* 
-                                    Ideally Internship model should have 'description' field. 
-                                    Looking at schemas/Internship.ts in memory... wait, I need to check schema.
-                                    Assuming it might exist or will be added. 
-                                */}
+                                <div className="border-t border-gray-100 dark:border-gray-700 pt-6">
+                                    <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Company Profile</h3>
+                                    <div className="grid grid-cols-2 gap-y-4 gap-x-8">
+                                        <div>
+                                            <span className="text-xs text-gray-500 uppercase">Website</span>
+                                            {internship.company_website ? (
+                                                <a href={internship.company_website} target="_blank" rel="noreferrer" className="block text-sm font-medium text-blue-600 hover:underline truncate">
+                                                    {internship.company_website}
+                                                </a>
+                                            ) : <p className="text-sm text-gray-400">Not available</p>}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {activeTab === 'remarks' && (
+                            <div className="space-y-4">
+                                <div className="text-center py-8 text-gray-500 text-sm">
+                                    <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                                    <p>Activity timeline coming soon.</p>
+                                    {/* Requires ActivityLog fetch on Drawer open - skipped for concise MVP */}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'followup' && (
+                            <div className="space-y-4">
+                                <div className="text-center py-8 text-gray-500 text-sm">
+                                    <Clock className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                                    <p>Follow-up scheduler coming soon.</p>
+                                    {/* Requires FollowUp integration - skipped for concise MVP */}
+                                </div>
+                            </div>
+                        )}
 
                     </div>
 
                     {/* Footer Actions */}
                     <div className="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 flex gap-3 flex-wrap">
-
                         <a
                             href={internship.source_url}
                             target="_blank"
@@ -152,14 +223,9 @@ const InternshipDrawer: React.FC<InternshipDrawerProps> = ({ internship, onClose
                             <ExternalLink className="w-4 h-4" />
                             Apply on {internship.source}
                         </a>
-                        <button className="flex items-center justify-center gap-2 px-4 py-2.5 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-sm font-medium transition-colors">
-                            <Trash2 className="w-4 h-4" />
-                        </button>
                     </div>
                 </div>
             </div>
-
-
         </>
     );
 };
