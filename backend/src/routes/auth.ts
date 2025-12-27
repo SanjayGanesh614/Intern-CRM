@@ -9,7 +9,8 @@ export const authRouter = Router()
 authRouter.post('/login', async (req, res) => {
   const { email, password } = req.body || {}
   if (!email || !password) return res.status(400).json({ error: 'invalid_body' })
-  const user = await User.findOne({ email })
+  const normalizedEmail = email.toLowerCase().trim()
+  const user = await User.findOne({ email: normalizedEmail })
   if (!user) return res.status(401).json({ error: 'invalid_credentials' })
   const ok = await bcrypt.compare(password, user.password_hash)
   if (!ok) return res.status(401).json({ error: 'invalid_credentials' })

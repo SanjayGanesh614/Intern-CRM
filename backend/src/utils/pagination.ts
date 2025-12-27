@@ -8,5 +8,5 @@ export function parsePagination(q: any) {
 export function parseSort(q: any) {
   const sortBy = String(q.sortBy || 'fetched_at')
   const sortDir = String(q.sortDir || 'desc').toLowerCase() === 'desc' ? -1 : 1
-  return { sortSpec: [[sortBy, sortDir as 1 | -1]] as [string, 1 | -1][] }
+  return { sortSpec: { [sortBy]: sortDir as 1 | -1 } }
 }
