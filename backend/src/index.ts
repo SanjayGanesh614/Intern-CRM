@@ -1,7 +1,7 @@
-import { env } from './config/env'
-import { connectMongo } from './db/mongo'
-import { app } from './app'
-import './models'
+import { env } from './config/env.js'
+import { connectMongo } from './db/mongo.js'
+import { app } from './app.js'
+import './models/index.js'
 
 async function main() {
   if (!env.mongoUri) {

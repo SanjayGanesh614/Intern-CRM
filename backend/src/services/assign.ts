@@ -1,6 +1,6 @@
-import { Internship } from '../models/Internship'
-import { User } from '../models/User'
-import { logActivity } from './activity'
+import { Internship } from '../models/Internship.js'
+import { User } from '../models/User.js'
+import { logActivity } from './activity.js'
 
 export async function assignInternship(opts: {
   internship_id: string

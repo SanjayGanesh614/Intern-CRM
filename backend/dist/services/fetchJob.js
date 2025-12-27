@@ -1,0 +1,144 @@
+import { spawn } from 'child_process';
+import path from 'path';
+import fs from 'fs';
+import { FetchLog } from '../models/FetchLog.js';
+import { Internship } from '../models/Internship.js';
+import { Company } from '../models/Company.js';
+const progressMap = new Map();
+const childMap = new Map();
+export function getProgress(fetch_id) {
+    return progressMap.get(fetch_id);
+}
+export async function cancelFetch(fetch_id) {
+    const ref = childMap.get(fetch_id);
+    if (ref?.proc) {
+        try {
+            ref.cancelled = true;
+            ref.proc.kill('SIGINT');
+        }
+        catch { }
+    }
+    progressMap.set(fetch_id, { ...(progressMap.get(fetch_id) || { phase: 'idle', percent: 0, total_fetched: 0, valid_entries: 0, duplicates: 0 }), phase: 'cancelled', message: 'Cancelled by user' });
+    await FetchLog.updateOne({ fetch_id }, { $set: { status: 'cancelled', completed_at: new Date() } });
+}
+export async function runFetchJob(opts) {
+    const fetchLog = await FetchLog.create({
+        trigger_type: opts.trigger_type,
+        started_at: new Date(),
+        status: 'success',
+        total_fetched: 0,
+        valid_entries: 0,
+        duplicates: 0
+    });
+    const fetch_id = String(fetchLog.fetch_id);
+    progressMap.set(fetch_id, { phase: 'python_fetch', percent: 5, total_fetched: 0, valid_entries: 0, duplicates: 0 });
+    const cwd = path.resolve(process.cwd(), '..', 'internscript');
+    const env = { ...process.env };
+    if (opts.rapidApiKey)
+        env.RAPIDAPI_KEY = opts.rapidApiKey;
+    await new Promise((resolve) => {
+        const proc = spawn('python', ['-c', 'import internship, json; print(json.dumps(internship.fetch_jobs()))'], {
+            cwd,
+            env,
+            stdio: ['ignore', 'pipe', 'pipe']
+        });
+        childMap.set(fetch_id, { proc });
+        proc.stdout.on('data', (_buf) => { });
+        proc.stderr.on('data', (_buf) => { });
+        proc.on('exit', (_code) => {
+            // proceed regardless; internship.fetch_jobs returns JSON via print
+            resolve();
+        });
+    });
+    progressMap.set(fetch_id, { phase: 'python_process', percent: 35, total_fetched: 0, valid_entries: 0, duplicates: 0 });
+    await new Promise((resolve) => {
+        const proc = spawn('python', ['-c', 'import combine, json; print(json.dumps(combine.extract_and_append_jobs()))'], {
+            cwd,
+            env,
+            stdio: ['ignore', 'pipe', 'pipe']
+        });
+        childMap.set(fetch_id, { proc });
+        proc.stdout.on('data', (_buf) => { });
+        proc.stderr.on('data', (_buf) => { });
+        proc.on('exit', (_code) => resolve());
+    });
+    progressMap.set(fetch_id, { phase: 'db_upsert', percent: 65, total_fetched: 0, valid_entries: 0, duplicates: 0 });
+    const combinedPath = path.join(cwd, 'combined_jobs.json');
+    if (!fs.existsSync(combinedPath)) {
+        progressMap.set(fetch_id, { phase: 'failed', percent: 100, total_fetched: 0, valid_entries: 0, duplicates: 0, message: 'combined_jobs.json missing' });
+        await FetchLog.updateOne({ fetch_id }, { $set: { status: 'failed', completed_at: new Date() } });
+        return { fetch_id };
+    }
+    const raw = fs.readFileSync(combinedPath, 'utf-8');
+    let items = [];
+    try {
+        items = JSON.parse(raw);
+    }
+    catch {
+        items = [];
+    }
+    let total = items.length;
+    let inserted = 0;
+    let duplicates = 0;
+    for (const job of items) {
+        const ref = childMap.get(fetch_id);
+        if (ref?.cancelled)
+            break;
+        const apply_link = job.apply_link || job.applyLink || '';
+        const title = job.title || job.job_title || '';
+        const companyName = job.company || job.employer_name || '';
+        const location = job.location || job.job_location || '';
+        const itype = job.type || job.job_employment_type || '';
+        const publisher = job.publisher || job.job_publisher || '';
+        if (!title || !companyName) {
+            duplicates++;
+            continue;
+        }
+        const existing = apply_link ? await Internship.findOne({ source_url: apply_link }) : null;
+        if (existing) {
+            duplicates++;
+            continue;
+        }
+        let company = await Company.findOne({ name: companyName });
+        if (!company) {
+            company = await Company.create({
+                name: companyName,
+                website: '',
+                industry: '',
+                size: '',
+                headquarters: '',
+                linkedin_url: '',
+                enrichment_source: { publisher }
+            });
+        }
+        await Internship.create({
+            company_id: company.company_id,
+            title,
+            internship_type: itype || 'Others',
+            location,
+            start_date: undefined,
+            end_date: undefined,
+            source: 'JSearch',
+            source_url: apply_link,
+            fetched_at: new Date(),
+            status: 'Unassigned',
+            assigned_to: undefined,
+            last_contacted: undefined,
+            follow_up_date: undefined
+        });
+        inserted++;
+        const pct = 65 + Math.floor((inserted / Math.max(1, total)) * 35);
+        progressMap.set(fetch_id, { phase: 'db_upsert', percent: Math.min(99, pct), total_fetched: total, valid_entries: inserted, duplicates });
+    }
+    progressMap.set(fetch_id, { phase: 'done', percent: 100, total_fetched: total, valid_entries: inserted, duplicates });
+    await FetchLog.updateOne({ fetch_id }, {
+        $set: {
+            total_fetched: total,
+            valid_entries: inserted,
+            duplicates,
+            status: 'success',
+            completed_at: new Date()
+        }
+    });
+    return { fetch_id };
+}

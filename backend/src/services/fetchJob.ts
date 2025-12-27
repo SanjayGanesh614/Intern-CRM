@@ -1,9 +1,9 @@
 import { spawn } from 'child_process'
 import path from 'path'
 import fs from 'fs'
-import { FetchLog } from '../models/FetchLog'
-import { Internship } from '../models/Internship'
-import { Company } from '../models/Company'
+import { FetchLog } from '../models/FetchLog.js'
+import { Internship } from '../models/Internship.js'
+import { Company } from '../models/Company.js'
 
 type Progress = {
   phase: 'idle' | 'python_fetch' | 'python_process' | 'db_upsert' | 'done' | 'failed' | 'cancelled'

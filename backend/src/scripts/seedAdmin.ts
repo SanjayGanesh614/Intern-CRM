@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs'
-import { connectMongo } from '../db/mongo'
-import { env } from '../config/env'
-import { User } from '../models/User'
+import { connectMongo } from '../db/mongo.js'
+import { env } from '../config/env.js'
+import { User } from '../models/User.js'
 
 async function run() {
   if (!env.mongoUri) throw new Error('MONGODB_URI required')

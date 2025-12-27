@@ -1,7 +1,7 @@
 import { Router } from 'express'
-import { auth } from '../middleware/auth'
-import { Remark } from '../models/Remark'
-import { logActivity } from '../services/activity'
+import { auth } from '../middleware/auth.js'
+import { Remark } from '../models/Remark.js'
+import { logActivity } from '../services/activity.js'
 
 export const remarksRouter = Router()
 

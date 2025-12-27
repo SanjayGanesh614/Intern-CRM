@@ -1,7 +1,7 @@
-import { Internship } from '../models/Internship'
-import { InternshipStatusHistory } from '../models/InternshipStatusHistory'
-import { Remark } from '../models/Remark'
-import { logActivity } from './activity'
+import { Internship } from '../models/Internship.js'
+import { InternshipStatusHistory } from '../models/InternshipStatusHistory.js'
+import { Remark } from '../models/Remark.js'
+import { logActivity } from './activity.js'
 
 export async function updateStatus(opts: {
   internship_id: string

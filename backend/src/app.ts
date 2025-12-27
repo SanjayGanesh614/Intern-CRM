@@ -1,14 +1,15 @@
 import express from 'express'
 import cors from 'cors'
 import morgan from 'morgan'
-import { authRouter } from './routes/auth'
-import { usersRouter } from './routes/users'
-import { companiesRouter } from './routes/companies'
-import { internshipsRouter } from './routes/internships'
-import { remarksRouter } from './routes/remarks'
-import { followupsRouter } from './routes/followups'
-import { activityRouter } from './routes/activity'
-import { fetchRouter } from './routes/fetch'
+import { authRouter } from './routes/auth.js'
+import { companiesRouter } from './routes/companies.js'
+import { internshipsRouter } from './routes/internships.js'
+import { remarksRouter } from './routes/remarks.js'
+import { followupsRouter } from './routes/followups.js'
+import { activityRouter } from './routes/activity.js'
+import { fetchRouter } from './routes/fetch.js'
+import { analyticsRouter } from './routes/analytics.js'
+import usersRouter from './routes/users.js'
 
 export const app = express()
 app.use(cors())
@@ -20,10 +21,11 @@ app.get('/health', (_req, res) => {
 })
 
 app.use('/auth', authRouter)
-app.use('/users', usersRouter)
 app.use('/companies', companiesRouter)
 app.use('/internships', internshipsRouter)
 app.use('/', remarksRouter)
 app.use('/', followupsRouter)
 app.use('/', activityRouter)
 app.use('/', fetchRouter)
+app.use('/analytics', analyticsRouter)
+app.use('/users', usersRouter)

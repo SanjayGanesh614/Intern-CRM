@@ -1,7 +1,7 @@
 import { Router } from 'express'
-import { auth } from '../middleware/auth'
-import { requireRole } from '../middleware/roles'
-import { runFetchJob, getProgress, cancelFetch } from '../services/fetchJob'
+import { auth } from '../middleware/auth.js'
+import { requireRole } from '../middleware/roles.js'
+import { runFetchJob, getProgress, cancelFetch } from '../services/fetchJob.js'
 
 export const fetchRouter = Router()
 

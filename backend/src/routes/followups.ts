@@ -1,7 +1,7 @@
 import { Router } from 'express'
-import { auth } from '../middleware/auth'
-import { FollowUp } from '../models/FollowUp'
-import { logActivity } from '../services/activity'
+import { auth } from '../middleware/auth.js'
+import { FollowUp } from '../models/FollowUp.js'
+import { logActivity } from '../services/activity.js'
 
 export const followupsRouter = Router()
 

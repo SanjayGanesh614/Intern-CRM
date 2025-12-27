@@ -1,6 +1,6 @@
 import { Router } from 'express'
-import { auth } from '../middleware/auth'
-import { ActivityLog } from '../models/ActivityLog'
+import { auth } from '../middleware/auth.js'
+import { ActivityLog } from '../models/ActivityLog.js'
 
 export const activityRouter = Router()
 

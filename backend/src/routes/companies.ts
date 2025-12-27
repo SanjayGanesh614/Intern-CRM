@@ -1,7 +1,7 @@
 import { Router } from 'express'
-import { auth } from '../middleware/auth'
-import { requireRole } from '../middleware/roles'
-import { Company } from '../models/Company'
+import { auth } from '../middleware/auth.js'
+import { requireRole } from '../middleware/roles.js'
+import { Company } from '../models/Company.js'
 
 export const companiesRouter = Router()
 

@@ -1,40 +1,85 @@
-import { Router } from 'express'
-import bcrypt from 'bcryptjs'
-import { auth } from '../middleware/auth'
-import { requireRole } from '../middleware/roles'
-import { User } from '../models/User'
+import { Router } from 'express';
+import { User } from '../models/User.js';
+import { auth, requireAdmin } from '../middleware/auth.js';
+import bcrypt from 'bcryptjs';
 
-export const usersRouter = Router()
+const router = Router();
 
-usersRouter.get('/', auth, requireRole(['admin']), async (_req, res) => {
-  const users = await User.find().lean()
-  res.json(users)
-})
+// Create User
+router.post('/', auth, requireAdmin, async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body;
 
-usersRouter.post('/', auth, requireRole(['admin']), async (req, res) => {
-  const { name, email, password, role } = req.body || {}
-  if (!name || !email || !password || !role) return res.status(400).json({ error: 'invalid_body' })
-  const existing = await User.findOne({ email })
-  if (existing) return res.status(409).json({ error: 'email_exists' })
-  const password_hash = await bcrypt.hash(password, 10)
-  const user = await User.create({ name, email, password_hash, role })
-  res.status(201).json({ user_id: user.user_id })
-})
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
 
-usersRouter.patch('/:user_id', auth, requireRole(['admin']), async (req, res) => {
-  const { user_id } = req.params
-  const { name, email, role } = req.body || {}
-  const update: any = {}
-  if (name) update.name = name
-  if (email) update.email = email
-  if (role) update.role = role
-  await User.updateOne({ user_id }, { $set: update })
-  res.json({ ok: true })
-})
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ error: 'Email already exists' });
+    }
 
-usersRouter.get('/:user_id/load', auth, requireRole(['admin']), async (req, res) => {
-  const { user_id } = req.params
-  const user = await User.findOne({ user_id })
-  if (!user) return res.status(404).json({ error: 'not_found' })
-  res.json({ active_load: user.active_load })
-})
+    const password_hash = await bcrypt.hash(password, 10);
+    const user = await User.create({
+      name,
+      email,
+      password_hash,
+      role,
+      active_load: 0
+    });
+
+    res.status(201).json({
+      user_id: user.user_id,
+      name: user.name,
+      email: user.email,
+      role: user.role
+    });
+  } catch (error) {
+    console.error('Create User Error:', error);
+    res.status(500).json({ error: 'Failed to create user' });
+  }
+});
+
+// List all users
+router.get('/', auth, requireAdmin, async (req, res) => {
+  try {
+    const users = await User.find({}, '-password_hash').sort({ created_at: -1 });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// Update user role
+router.patch('/:id/role', auth, requireAdmin, async (req, res) => {
+  try {
+    const { role } = req.body;
+    if (!['admin', 'user'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
+
+    const user = await User.findOneAndUpdate(
+      { user_id: req.params.id },
+      { role },
+      { new: true, fields: '-password_hash' }
+    );
+
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update role' });
+  }
+});
+
+// Delete user
+router.delete('/:id', auth, requireAdmin, async (req, res) => {
+  try {
+    const user = await User.findOneAndDelete({ user_id: req.params.id });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ success: true, user_id: req.params.id });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
+export default router;

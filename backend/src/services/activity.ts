@@ -1,4 +1,4 @@
-import { ActivityLog } from '../models/ActivityLog'
+import { ActivityLog } from '../models/ActivityLog.js'
 
 export async function logActivity(data: {
   user_id: string
