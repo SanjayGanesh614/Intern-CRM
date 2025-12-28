@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuthStore } from '../../context/authStore';
 import { X, ExternalLink, Building2, MapPin, Calendar, Briefcase, Globe } from 'lucide-react';
 import type { Internship } from '../../services/internshipService';
 import { cn } from '../../utils';
@@ -17,6 +18,7 @@ interface InternshipDrawerProps {
 
 const InternshipDrawer: React.FC<InternshipDrawerProps> = ({ internship, onClose, isOpen }) => {
     const [activeTab, setActiveTab] = useState<'details' | 'remarks' | 'followup' | 'outreach'>('details');
+    const { user } = useAuthStore();
     // const [isUpdating, setIsUpdating] = useState(false); // Unused
 
     if (!internship) return null;
@@ -102,10 +104,21 @@ const InternshipDrawer: React.FC<InternshipDrawerProps> = ({ internship, onClose
                                 </select>
                             </div>
                             <div className="flex-1">
-                                <label className="text-xs font-semibold text-gray-500 mb-1 block">Assigned To</label>
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="text-xs font-semibold text-gray-500 block">Assigned To</label>
+                                    {user && internship.assigned_to !== user.user_id && (
+                                        <button
+                                            onClick={() => handleAssign(user.user_id)}
+                                            className="text-xs text-purple-600 hover:text-purple-700 font-medium hover:underline"
+                                        >
+                                            Assign to Me
+                                        </button>
+                                    )}
+                                </div>
                                 <AssignmentDropdown
                                     value={internship.assigned_to}
                                     onChange={handleAssign}
+                                    currentUser={user}
                                 />
                             </div>
                         </div>

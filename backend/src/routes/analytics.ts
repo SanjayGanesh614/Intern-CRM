@@ -38,6 +38,21 @@ analyticsRouter.get('/dashboard', auth, async (req, res) => {
             Internship.aggregate([
                 { $match: { assigned_to: { $exists: true, $ne: null } } },
                 { $group: { _id: '$assigned_to', count: { $sum: 1 } } },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: '_id',
+                        foreignField: 'user_id',
+                        as: 'user'
+                    }
+                },
+                { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+                {
+                    $project: {
+                        _id: { $ifNull: ['$user.name', 'Unknown'] },
+                        count: 1
+                    }
+                },
                 { $sort: { count: -1 } },
                 { $limit: 5 }
             ])

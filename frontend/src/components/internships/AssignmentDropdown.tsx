@@ -8,9 +8,10 @@ interface AssignmentDropdownProps {
     onChange: (userId: string) => void;
     className?: string;
     disabled?: boolean;
+    currentUser?: any; // or strict User type
 }
 
-const AssignmentDropdown: React.FC<AssignmentDropdownProps> = ({ value, onChange, className, disabled }) => {
+const AssignmentDropdown: React.FC<AssignmentDropdownProps> = ({ value, onChange, className, disabled, currentUser }) => {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -32,7 +33,12 @@ const AssignmentDropdown: React.FC<AssignmentDropdownProps> = ({ value, onChange
     if (loading) return <div className="text-gray-400 text-xs flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Loading users...</div>;
 
     // Filter to only show relevant roles if needed (Admin/Sales)
-    const assignableUsers = users.filter(u => ['admin', 'sales'].includes(u.role));
+    const assignableUsers = users.filter(u => {
+        if (currentUser?.role === 'sales') {
+            return u.user_id === currentUser.user_id;
+        }
+        return ['admin', 'sales'].includes(u.role);
+    });
 
     return (
         <select

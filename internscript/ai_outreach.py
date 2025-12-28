@@ -23,7 +23,7 @@ def generate_outreach():
              return {"status": "error", "message": "GOOGLE_API_KEY not found in environment variables"}
 
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         
         prompt = ""
         if outreach_type == 'email':

@@ -41,7 +41,7 @@ router.post('/', auth, requireAdmin, async (req, res) => {
 });
 
 // List all users
-router.get('/', auth, requireAdmin, async (req, res) => {
+router.get('/', auth, async (req, res) => {
   try {
     const users = await User.find({}, '-password_hash').sort({ created_at: -1 });
     res.json(users);

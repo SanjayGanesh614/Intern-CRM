@@ -164,6 +164,9 @@ internshipsRouter.patch('/:id', auth, async (req, res) => {
   for (const k of allowed) if (update[k] !== undefined) fields[k] = update[k]
   const assigned_to = update.assigned_to
   if (assigned_to !== undefined && assigned_to !== internship.assigned_to) {
+    if (actor.role === 'sales' && assigned_to !== actor.user_id && assigned_to !== '') {
+      return res.status(403).json({ error: 'forbidden: sales users can only assign to themselves' })
+    }
     await assignInternship({ internship_id: id, new_assignee: assigned_to || '', actor_user_id: actor.user_id })
   }
   if (Object.keys(fields).length > 0) {
