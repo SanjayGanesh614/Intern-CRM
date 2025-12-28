@@ -17,7 +17,11 @@ const InternshipSchema = new Schema({
         type: String,
         enum: [
             'Unassigned',
+            'Applied',
             'Contacted',
+            'Interview',
+            'Offer',
+            'Ghosted',
             'Follow-up',
             'Meeting Scheduled',
             'Interested',

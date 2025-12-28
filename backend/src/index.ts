@@ -3,6 +3,7 @@ import { connectMongo } from './db/mongo.js'
 import { app } from './app.js'
 import './models/index.js'
 
+
 async function main() {
   if (!env.mongoUri) {
     throw new Error('MONGODB_URI is required')

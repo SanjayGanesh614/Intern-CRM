@@ -117,7 +117,7 @@ export async function runFetchJob(opts) {
             title,
             internship_type: itype || 'Internship',
             location,
-            description: job.description || '',
+            description: job.job_description || '',
             posted_at: job.posted_at || null,
             source: publisher || 'JSearch',
             source_url: apply_link,

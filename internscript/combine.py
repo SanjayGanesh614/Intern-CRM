@@ -47,7 +47,7 @@ def extract_and_append_jobs():
                         "country": job.get("job_country"),
                         "type": job.get("job_employment_type"),
                         "apply_link": job.get("job_apply_link"),
-                        "description": (job.get("job_description") or "")[:300] + "...",
+                        "description": job.get("job_description") or "",
                         "posted_at": job.get("job_posted_at"),
                         "publisher": job.get("job_publisher")
                     }

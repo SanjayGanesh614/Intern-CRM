@@ -10,6 +10,7 @@ import { activityRouter } from './routes/activity.js'
 import { fetchRouter } from './routes/fetch.js'
 import { analyticsRouter } from './routes/analytics.js'
 import usersRouter from './routes/users.js'
+import aiRoutes from './routes/ai.js'
 
 export const app = express()
 app.use(cors())
@@ -29,3 +30,4 @@ app.use('/', activityRouter)
 app.use('/', fetchRouter)
 app.use('/analytics', analyticsRouter)
 app.use('/users', usersRouter)
+app.use('/ai', aiRoutes)

@@ -7,6 +7,7 @@ import { assignInternship, updateInternshipStatus } from '../../services/interns
 import { toast } from 'react-hot-toast';
 import { ActivityTimeline } from './ActivityTimeline';
 import { FollowUpTab } from './FollowUpTab';
+import { OutreachTab } from './OutreachTab';
 
 interface InternshipDrawerProps {
     internship: Internship | null;
@@ -15,7 +16,7 @@ interface InternshipDrawerProps {
 }
 
 const InternshipDrawer: React.FC<InternshipDrawerProps> = ({ internship, onClose, isOpen }) => {
-    const [activeTab, setActiveTab] = useState<'details' | 'remarks' | 'followup'>('details');
+    const [activeTab, setActiveTab] = useState<'details' | 'remarks' | 'followup' | 'outreach'>('details');
     // const [isUpdating, setIsUpdating] = useState(false); // Unused
 
     if (!internship) return null;
@@ -130,6 +131,12 @@ const InternshipDrawer: React.FC<InternshipDrawerProps> = ({ internship, onClose
                         >
                             Follow-Up
                         </button>
+                        <button
+                            onClick={() => setActiveTab('outreach')}
+                            className={cn("py-3 px-4 text-sm font-medium border-b-2 transition-colors", activeTab === 'outreach' ? "border-purple-600 text-purple-600" : "border-transparent text-gray-500 hover:text-gray-700")}
+                        >
+                            AI Outreach
+                        </button>
                     </div>
 
                     {/* Scrollable Content */}
@@ -198,6 +205,12 @@ const InternshipDrawer: React.FC<InternshipDrawerProps> = ({ internship, onClose
 
                         {activeTab === 'followup' && (
                             <FollowUpTab internshipId={internship.internship_id} />
+                        )}
+
+                        {activeTab === 'outreach' && (
+                            <div className="p-1">
+                                <OutreachTab internship={internship} />
+                            </div>
                         )}
 
                     </div>

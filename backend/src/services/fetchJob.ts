@@ -119,8 +119,6 @@ export async function runFetchJob(opts: {
       duplicates++
       continue
     }
-    const existing = apply_link ? await Internship.findOne({ source_url: apply_link }) : null
-
     let company = await Company.findOne({ name: companyName })
     if (!company) {
       company = await Company.create({
@@ -137,12 +135,17 @@ export async function runFetchJob(opts: {
       await Company.updateOne({ _id: company._id }, { $set: { website } })
     }
 
+    let existing = apply_link ? await Internship.findOne({ source_url: apply_link }) : null
+    if (!existing) {
+      existing = await Internship.findOne({ company_id: company._id, title: title })
+    }
+
     const internshipData = {
       company_id: company.company_id,
       title,
       internship_type: itype || 'Internship',
       location,
-      description: job.job_description || '',
+      description: job.job_description || job.description || '',
       posted_at: job.posted_at || null,
       source: publisher || 'JSearch',
       source_url: apply_link,

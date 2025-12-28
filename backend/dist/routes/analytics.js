@@ -6,7 +6,7 @@ import { FollowUp } from '../models/FollowUp.js';
 export const analyticsRouter = Router();
 analyticsRouter.get('/dashboard', auth, async (req, res) => {
     try {
-        const [totalInternships, totalCompanies, statusBreakdown, dueFollowups] = await Promise.all([
+        const [totalInternships, totalCompanies, statusBreakdown, dueFollowups, conversions, industryPerformance, leaderboard] = await Promise.all([
             Internship.countDocuments({}),
             Company.countDocuments({}),
             Internship.aggregate([
@@ -18,7 +18,19 @@ analyticsRouter.get('/dashboard', auth, async (req, res) => {
                     $gte: new Date(new Date().setHours(0, 0, 0, 0)),
                     $lt: new Date(new Date().setHours(23, 59, 59, 999))
                 }
-            })
+            }),
+            Internship.countDocuments({ status: { $in: ['Onboarded', 'Offer'] } }),
+            Company.aggregate([
+                { $group: { _id: '$industry', count: { $sum: 1 } } },
+                { $sort: { count: -1 } },
+                { $limit: 10 }
+            ]),
+            Internship.aggregate([
+                { $match: { assigned_to: { $exists: true, $ne: null } } },
+                { $group: { _id: '$assigned_to', count: { $sum: 1 } } },
+                { $sort: { count: -1 } },
+                { $limit: 5 }
+            ])
         ]);
         // Format status breakdown
         const stats = {};
@@ -29,7 +41,10 @@ analyticsRouter.get('/dashboard', auth, async (req, res) => {
             total_internships: totalInternships,
             total_companies: totalCompanies,
             internships_by_status: stats,
-            followups_due_today: dueFollowups
+            followups_due_today: dueFollowups,
+            conversions,
+            industry_performance: industryPerformance,
+            leaderboard
         });
     }
     catch (error) {

@@ -6,6 +6,7 @@ import InternshipsPage from './pages/internships/InternshipsPage';
 import UsersPage from './pages/admin/UsersPage';
 import AnalyticsPage from './pages/analytics/AnalyticsPage';
 import CompaniesPage from './pages/companies/CompaniesPage';
+import OutreachPage from './pages/outreach/OutreachPage';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Toaster } from 'react-hot-toast';
 
@@ -21,6 +22,7 @@ function App() {
             <Route path="/internships" element={<InternshipsPage />} />
             <Route path="/companies" element={<CompaniesPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/outreach" element={<OutreachPage />} />
 
             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
               <Route path="/users" element={<UsersPage />} />
