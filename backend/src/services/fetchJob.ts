@@ -55,51 +55,50 @@ export async function runFetchJob(opts: {
   const env = { ...process.env }
   if (opts.rapidApiKey) env.RAPIDAPI_KEY = opts.rapidApiKey
 
+  let items: any[] = []
+
+  // New Ingestion Logic (File-less)
   await new Promise<void>((resolve) => {
-    const proc = spawn('python', ['-c', 'import internship, json; print(json.dumps(internship.fetch_jobs()))'], {
+    const proc = spawn('python', ['ingest.py'], {
       cwd,
       env,
       stdio: ['ignore', 'pipe', 'pipe']
     })
     childMap.set(fetch_id, { proc })
-    proc.stdout.on('data', (_buf: Buffer) => { })
-    proc.stderr.on('data', (_buf: Buffer) => { })
-    proc.on('exit', (_code: number) => {
-      // proceed regardless; internship.fetch_jobs returns JSON via print
+
+    let stdoutData = ''
+    proc.stdout.on('data', (chunk) => {
+      stdoutData += chunk.toString()
+    })
+    proc.stderr.on('data', (chunk) => { console.error('Python Stderr:', chunk.toString()) })
+
+    proc.on('exit', (code) => {
+      if (code !== 0) {
+        console.error('Ingest script exited with code', code)
+      }
+      try {
+        const parsed = JSON.parse(stdoutData)
+        if (Array.isArray(parsed)) {
+          items = parsed
+        } else if (parsed && parsed.status === 'error') {
+          console.error('Ingest Error:', parsed.message)
+        }
+      } catch (e) {
+        console.error('Failed to parse ingest output', e)
+        items = []
+      }
       resolve()
     })
   })
 
-  progressMap.set(fetch_id, { phase: 'python_process', percent: 35, total_fetched: 0, valid_entries: 0, duplicates: 0 })
-
-  await new Promise<void>((resolve) => {
-    const proc = spawn('python', ['-c', 'import combine, json; print(json.dumps(combine.extract_and_append_jobs()))'], {
-      cwd,
-      env,
-      stdio: ['ignore', 'pipe', 'pipe']
-    })
-    childMap.set(fetch_id, { proc })
-    proc.stdout.on('data', (_buf: Buffer) => { })
-    proc.stderr.on('data', (_buf: Buffer) => { })
-    proc.on('exit', (_code: number) => resolve())
-  })
+  // Skip the old two-step process and file reading
+  /* 
+  await new Promise<void>((resolve) => { ... }) // Old fetch
+  await new Promise<void>((resolve) => { ... }) // Old combine
+  const raw = fs.readFileSync(combinedPath, 'utf-8') ...
+  */
 
   progressMap.set(fetch_id, { phase: 'db_upsert', percent: 65, total_fetched: 0, valid_entries: 0, duplicates: 0 })
-
-  const combinedPath = path.join(cwd, 'combined_jobs.json')
-  if (!fs.existsSync(combinedPath)) {
-    progressMap.set(fetch_id, { phase: 'failed', percent: 100, total_fetched: 0, valid_entries: 0, duplicates: 0, message: 'combined_jobs.json missing' })
-    await FetchLog.updateOne({ fetch_id }, { $set: { status: 'failed', completed_at: new Date() } })
-    return { fetch_id }
-  }
-
-  const raw = fs.readFileSync(combinedPath, 'utf-8')
-  let items: any[] = []
-  try {
-    items = JSON.parse(raw)
-  } catch {
-    items = []
-  }
 
   let total = items.length
   let inserted = 0
@@ -145,7 +144,7 @@ export async function runFetchJob(opts: {
       title,
       internship_type: itype || 'Internship',
       location,
-      description: job.job_description || job.description || '',
+      description: job.description || '',
       posted_at: job.posted_at || null,
       source: publisher || 'JSearch',
       source_url: apply_link,
