@@ -1,7 +1,7 @@
 import sys
 import json
 import os
-import google.generativeai as genai
+from openai import OpenAI
 
 def generate_outreach():
     try:
@@ -18,12 +18,11 @@ def generate_outreach():
         outreach_type = data.get('type', 'email') # 'email' or 'linkedin'
         user_notes = data.get('user_notes', '')
         
-        api_key = os.environ.get('GOOGLE_API_KEY')
+        api_key = os.environ.get('OPENAI_API_KEY')
         if not api_key:
-             return {"status": "error", "message": "GOOGLE_API_KEY not found in environment variables"}
+             return {"status": "error", "message": "OPENAI_API_KEY not found in environment variables"}
 
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        client = OpenAI(api_key=api_key)
         
         prompt = ""
         if outreach_type == 'email':
@@ -59,11 +58,17 @@ def generate_outreach():
         else:
              return {"status": "error", "message": "Invalid outreach type. Must be 'email' or 'linkedin'"}
 
-        response = model.generate_content(prompt)
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are a helpful career assistant helping a student apply for internships."},
+                {"role": "user", "content": prompt}
+            ]
+        )
         
         return {
             "status": "success",
-            "generated_content": response.text
+            "generated_content": response.choices[0].message.content
         }
 
     except Exception as e:
